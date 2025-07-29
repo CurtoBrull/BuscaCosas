@@ -15,9 +15,9 @@ const usarDatosEjemplo = () => {
 };
 
 // PUT /api/objetos/[id] - Actualizar un objeto existente
-export async function PUT(request: NextRequest, context: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const id = parseInt(context.params.id);
+    const id = parseInt(params.id);
     const body: ObjetoInput = await request.json();
 
     // Validar los datos de entrada
@@ -86,9 +86,11 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
 }
 
 // GET /api/objetos/[id] - Obtener un objeto específico
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
+// Next.js espera que el segundo argumento sea un objeto con la propiedad `params`
+// Cambiamos el nombre del parámetro a `{ params }` para evitar errores de tipo
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const id = parseInt(context.params.id);
+    const id = parseInt(params.id);
 
     // Usar datos de ejemplo en desarrollo si no hay conexión a Supabase
     if (usarDatosEjemplo()) {
