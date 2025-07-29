@@ -15,9 +15,9 @@ const usarDatosEjemplo = () => {
 };
 
 // PUT /api/objetos/[id] - Actualizar un objeto existente
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: { id: string } }) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt(context.params.id);
     const body: ObjetoInput = await request.json();
 
     // Validar los datos de entrada
