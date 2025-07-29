@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
       objetos = mockObjetos;
     } else {
       // Obtener todos los objetos de la base de datos
+      if (!supabase) {
+        throw new Error('Supabase no está inicializado');
+      }
       const { data, error } = await supabase
         .from('objetos')
         .select('*')

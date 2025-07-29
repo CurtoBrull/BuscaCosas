@@ -53,6 +53,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Actualizar el objeto en la base de datos.
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'No se pudo conectar a la base de datos' },
+        { status: 500 }
+      );
+    }
     const { data, error } = await supabase
       .from('objetos')
       .update({
@@ -101,11 +107,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           { status: 404 }
         );
       }
-
       return NextResponse.json({ objeto }, { status: 200 });
     }
 
     // Obtener el objeto de la base de datos.
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'No se pudo conectar a la base de datos' },
+        { status: 500 }
+      );
+    }
     const { data, error } = await supabase
       .from('objetos')
       .select('*')

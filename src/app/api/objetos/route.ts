@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
     }
     
     // Obtener todos los objetos de la base de datos
+    if (!supabase) {
+      throw new Error('Supabase client is not initialized');
+    }
     const { data, error } = await supabase
       .from('objetos')
       .select('*')
@@ -78,8 +81,10 @@ export async function POST(request: NextRequest) {
       objetosEnMemoria = [nuevoObjeto, ...objetosEnMemoria];
       return NextResponse.json({ objeto: nuevoObjeto }, { status: 201 });
     }
-    
     // Insertar el objeto en la base de datos
+    if (!supabase) {
+      throw new Error('Supabase client is not initialized');
+    }
     const { data, error } = await supabase
       .from('objetos')
       .insert({
