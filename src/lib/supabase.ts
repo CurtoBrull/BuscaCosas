@@ -22,13 +22,20 @@ if (supabaseUrl && supabaseKey && supabaseUrl !== '' && !supabaseUrl.includes('e
           eq: () => Promise.resolve({ data: [], error: null }),
           single: () => Promise.resolve({ data: null, error: null }),
         }),
+        update: () => ({
+          eq: () => ({
+            select: () => ({
+              single: () => Promise.resolve({ data: null, error: null }),
+            }),
+          }),
+        }),
         insert: () => ({
           select: () => ({
             single: () => Promise.resolve({ data: null, error: null }),
           }),
         }),
       }),
-    } as any;
+    } as ReturnType<typeof createClient<Database>>;
   }
 }
 
