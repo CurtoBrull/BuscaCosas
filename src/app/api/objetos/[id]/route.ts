@@ -3,24 +3,24 @@ import { supabase } from '@/lib/supabase';
 import { Objeto, ObjetoInput } from '@/lib/types';
 import { mockObjetos } from '@/lib/mockData';
 
-// Referencia a los objetos en memoria desde el archivo principal
-// Esto es solo para desarrollo cuando no hay conexión a Supabase
+// Referencia a los objetos en memoria desde el archivo principal.
+// Esto es solo para desarrollo cuando no hay conexión a Supabase.
 const objetosEnMemoria = mockObjetos;
 
-// Función para determinar si estamos usando datos de ejemplo
+// Función para determinar si estamos usando datos de ejemplo.
 const usarDatosEjemplo = () => {
   return process.env.NODE_ENV === 'development' &&
     (!process.env.NEXT_PUBLIC_SUPABASE_URL ||
       process.env.NEXT_PUBLIC_SUPABASE_URL.includes('example'));
 };
 
-// PUT /api/objetos/[id] - Actualizar un objeto existente
+// PUT /api/objetos/[id] - Actualizar un objeto existente.
 export async function PUT(request: NextRequest, context: { params: { id: string } }) {
   try {
     const id = parseInt(context.params.id);
     const body: ObjetoInput = await request.json();
 
-    // Validar los datos de entrada
+    // Validar los datos de entrada.
     if (!body.nombre || !body.ubicacion) {
       return NextResponse.json(
         { error: 'El nombre y la ubicación son obligatorios' },
@@ -28,7 +28,7 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
       );
     }
 
-    // Usar datos de ejemplo en desarrollo si no hay conexión a Supabase
+    // Usar datos de ejemplo en desarrollo si no hay conexión a Supabase.
     if (usarDatosEjemplo()) {
       const index = objetosEnMemoria.findIndex(obj => obj.id === id);
 
@@ -51,7 +51,7 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
       return NextResponse.json({ objeto: objetoActualizado }, { status: 200 });
     }
 
-    // Actualizar el objeto en la base de datos
+    // Actualizar el objeto en la base de datos.
     const { data, error } = await supabase
       .from('objetos')
       .update({
@@ -85,12 +85,12 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
   }
 }
 
-// GET /api/objetos/[id] - Obtener un objeto específico
+// GET /api/objetos/[id] - Obtener un objeto específico.
 export async function GET(request: NextRequest, context: { params: { id: string } }) {
   try {
     const id = parseInt(context.params.id);
 
-    // Usar datos de ejemplo en desarrollo si no hay conexión a Supabase
+    // Usar datos de ejemplo en desarrollo si no hay conexión a Supabase.
     if (usarDatosEjemplo()) {
       const objeto = objetosEnMemoria.find(obj => obj.id === id);
 
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest, context: { params: { id: string 
       return NextResponse.json({ objeto }, { status: 200 });
     }
 
-    // Obtener el objeto de la base de datos
+    // Obtener el objeto de la base de datos.
     const { data, error } = await supabase
       .from('objetos')
       .select('*')

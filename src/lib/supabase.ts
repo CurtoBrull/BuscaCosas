@@ -15,27 +15,40 @@ if (supabaseUrl && supabaseKey && supabaseUrl !== '' && !supabaseUrl.includes('e
   if (process.env.NODE_ENV === 'development') {
     console.warn('Supabase client not initialized. Using mock client.');
     // Crear un cliente simulado que no hace nada pero no causa errores
-    supabase = {
-      from: () => ({
+    // Mock implementations to avoid deep nesting
+    const mockOrder = () => Promise.resolve({ data: [], error: null });
+    const mockEq = () => Promise.resolve({ data: [], error: null });
+    const mockSingle = () => Promise.resolve({ data: null, error: null });
+
+    const mockSelect = () => ({
+      order: mockOrder,
+      eq: mockEq,
+      single: mockSingle,
+    });
+
+    const mockUpdate = () => ({
+      eq: () => ({
         select: () => ({
-          order: () => Promise.resolve({ data: [], error: null }),
-          eq: () => Promise.resolve({ data: [], error: null }),
-          single: () => Promise.resolve({ data: null, error: null }),
-        }),
-        update: () => ({
-          eq: () => ({
-            select: () => ({
-              single: () => Promise.resolve({ data: null, error: null }),
-            }),
-          }),
-        }),
-        insert: () => ({
-          select: () => ({
-            single: () => Promise.resolve({ data: null, error: null }),
-          }),
+          single: mockSingle,
         }),
       }),
-    } as ReturnType<typeof createClient<Database>>;
+    });
+
+    const mockInsert = () => ({
+      select: () => ({
+        single: mockSingle,
+      }),
+    });
+
+    const mockFrom = () => ({
+      select: mockSelect,
+      update: mockUpdate,
+      insert: mockInsert,
+    });
+
+    supabase = {
+      from: mockFrom,
+    } as unknown as ReturnType<typeof createClient<Database>>;
   }
 }
 
