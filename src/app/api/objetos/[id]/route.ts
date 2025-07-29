@@ -14,10 +14,11 @@ const usarDatosEjemplo = () => {
       process.env.NEXT_PUBLIC_SUPABASE_URL.includes('example'));
 };
 
-// PUT /api/objetos/[id] - Actualizar un objeto existente
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+// PUT /api/objetos/[id] - Actualizar un objeto existente.
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     const body: ObjetoInput = await request.json();
 
     // Validar los datos de entrada.
@@ -85,12 +86,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-// GET /api/objetos/[id] - Obtener un objeto específico
-// Next.js espera que el segundo argumento sea un objeto con la propiedad `params`
-// Cambiamos el nombre del parámetro a `{ params }` para evitar errores de tipo
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
 
     // Usar datos de ejemplo en desarrollo si no hay conexión a Supabase.
     if (usarDatosEjemplo()) {
