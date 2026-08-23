@@ -1,19 +1,20 @@
 import { neon } from '@neondatabase/serverless';
 
-const databaseUrl = process.env.DATABASE_URL;
-
 /**
- * Indica si la variable de conexión a Neon está configurada correctamente
+ * Obtiene el cliente SQL de Neon evaluando la variable de entorno actual
  */
-export const isDbConfigured = Boolean(
-  databaseUrl &&
-  databaseUrl.trim() !== '' &&
-  !databaseUrl.includes('tu-conexion-neon') &&
-  !databaseUrl.includes('example') &&
-  (databaseUrl.startsWith('postgres://') || databaseUrl.startsWith('postgresql://'))
-);
+export function getDb() {
+  const databaseUrl = process.env.DATABASE_URL;
 
-/**
- * Cliente SQL de Neon para consultas serverless
- */
-export const sql = isDbConfigured ? neon(databaseUrl!) : null;
+  if (
+    !databaseUrl ||
+    databaseUrl.trim() === '' ||
+    databaseUrl.includes('tu-conexion-neon') ||
+    databaseUrl.includes('example') ||
+    (!databaseUrl.startsWith('postgres://') && !databaseUrl.startsWith('postgresql://'))
+  ) {
+    return null;
+  }
+
+  return neon(databaseUrl);
+}

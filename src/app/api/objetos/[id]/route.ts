@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql, isDbConfigured } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { Objeto, ObjetoInput } from '@/lib/types';
 import { mockObjetos } from '@/lib/mockData';
 
-// Referencia a los objetos en memoria para desarrollo cuando no hay conexión a Neon
 const objetosEnMemoria = mockObjetos;
 
 // PUT /api/objetos/[id] - Actualizar un objeto existente
@@ -25,27 +24,35 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       );
     }
 
+    const sql = getDb();
+
     // Usar datos de ejemplo en desarrollo si no hay conexión a Neon
-    if (!isDbConfigured || !sql) {
-      const index = objetosEnMemoria.findIndex(obj => obj.id === id);
+    if (!sql) {
+      if (process.env.NODE_ENV === 'development') {
+        const index = objetosEnMemoria.findIndex(obj => obj.id === id);
 
-      if (index === -1) {
-        return NextResponse.json(
-          { error: 'Objeto no encontrado' },
-          { status: 404 }
-        );
+        if (index === -1) {
+          return NextResponse.json(
+            { error: 'Objeto no encontrado' },
+            { status: 404 }
+          );
+        }
+
+        const objetoActualizado: Objeto = {
+          ...objetosEnMemoria[index],
+          nombre: body.nombre,
+          descripcion: body.descripcion || '',
+          ubicacion: body.ubicacion,
+          updated_at: new Date().toISOString()
+        };
+
+        objetosEnMemoria[index] = objetoActualizado;
+        return NextResponse.json({ objeto: objetoActualizado }, { status: 200 });
       }
-
-      const objetoActualizado: Objeto = {
-        ...objetosEnMemoria[index],
-        nombre: body.nombre,
-        descripcion: body.descripcion || '',
-        ubicacion: body.ubicacion,
-        updated_at: new Date().toISOString()
-      };
-
-      objetosEnMemoria[index] = objetoActualizado;
-      return NextResponse.json({ objeto: objetoActualizado }, { status: 200 });
+      return NextResponse.json(
+        { error: 'DATABASE_URL no está configurada en las variables de entorno' },
+        { status: 500 }
+      );
     }
 
     // Actualizar el objeto en la base de datos Neon
@@ -71,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     console.error('Error al actualizar objeto:', error);
     return NextResponse.json(
-      { error: 'Error al actualizar el objeto' },
+      { error: error instanceof Error ? error.message : 'Error al actualizar objeto en la base de datos' },
       { status: 500 }
     );
   }
@@ -86,17 +93,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
 
-    // Usar datos de ejemplo en desarrollo si no hay conexión a Neon
-    if (!isDbConfigured || !sql) {
-      const objeto = objetosEnMemoria.find(obj => obj.id === id);
+    const sql = getDb();
 
-      if (!objeto) {
-        return NextResponse.json(
-          { error: 'Objeto no encontrado' },
-          { status: 404 }
-        );
+    // Usar datos de ejemplo en desarrollo si no hay conexión a Neon
+    if (!sql) {
+      if (process.env.NODE_ENV === 'development') {
+        const objeto = objetosEnMemoria.find(obj => obj.id === id);
+
+        if (!objeto) {
+          return NextResponse.json(
+            { error: 'Objeto no encontrado' },
+            { status: 404 }
+          );
+        }
+        return NextResponse.json({ objeto }, { status: 200 });
       }
-      return NextResponse.json({ objeto }, { status: 200 });
+      return NextResponse.json(
+        { error: 'DATABASE_URL no está configurada en las variables de entorno' },
+        { status: 500 }
+      );
     }
 
     // Obtener el objeto de Neon
@@ -119,7 +134,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     console.error('Error al obtener objeto:', error);
     return NextResponse.json(
-      { error: 'Error al obtener el objeto' },
+      { error: error instanceof Error ? error.message : 'Error al obtener objeto de la base de datos' },
       { status: 500 }
     );
   }

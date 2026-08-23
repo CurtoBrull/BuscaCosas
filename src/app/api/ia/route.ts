@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql, isDbConfigured } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { simularRespuestaIA } from '@/lib/utils';
 import { Objeto } from '@/lib/types';
 import { mockObjetos } from '@/lib/mockData';
@@ -17,10 +17,18 @@ export async function POST(request: NextRequest) {
     }
     
     let objetos: Objeto[] = [];
+    const sql = getDb();
     
     // Usar datos de ejemplo en desarrollo si no hay conexión a Neon
-    if (!isDbConfigured || !sql) {
-      objetos = mockObjetos;
+    if (!sql) {
+      if (process.env.NODE_ENV === 'development') {
+        objetos = mockObjetos;
+      } else {
+        return NextResponse.json(
+          { error: 'DATABASE_URL no está configurada en las variables de entorno' },
+          { status: 500 }
+        );
+      }
     } else {
       // Obtener todos los objetos de la base de datos Neon
       const rows = await sql`
@@ -42,7 +50,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error al procesar la pregunta:', error);
     return NextResponse.json(
-      { error: 'Error al procesar la pregunta' },
+      { error: error instanceof Error ? error.message : 'Error al procesar la pregunta' },
       { status: 500 }
     );
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql, isDbConfigured } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { buscarObjetos } from '@/lib/utils';
 import { Objeto, ObjetoInput } from '@/lib/types';
 import { mockObjetos } from '@/lib/mockData';
@@ -12,13 +12,18 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('q') || '';
+    const sql = getDb();
     
-    let objetos: Objeto[] = [];
-    
-    // Usar datos de ejemplo en desarrollo si no hay conexión configurada a Neon
-    if (!isDbConfigured || !sql) {
-      objetos = query ? buscarObjetos(objetosEnMemoria, query) : objetosEnMemoria;
-      return NextResponse.json({ objetos }, { status: 200 });
+    // Si no hay conexión configurada a Neon
+    if (!sql) {
+      if (process.env.NODE_ENV === 'development') {
+        const objetos = query ? buscarObjetos(objetosEnMemoria, query) : objetosEnMemoria;
+        return NextResponse.json({ objetos }, { status: 200 });
+      }
+      return NextResponse.json(
+        { error: 'DATABASE_URL no está configurada en las variables de entorno' },
+        { status: 500 }
+      );
     }
     
     // Obtener todos los objetos de la base de datos Neon
@@ -31,13 +36,13 @@ export async function GET(request: NextRequest) {
     const data = rows as unknown as Objeto[];
     
     // Si hay un query, filtrar los resultados
-    objetos = query ? buscarObjetos(data, query) : data;
+    const objetos = query ? buscarObjetos(data, query) : data;
     
     return NextResponse.json({ objetos }, { status: 200 });
   } catch (error) {
     console.error('Error al buscar objetos:', error);
     return NextResponse.json(
-      { error: 'Error al buscar objetos' },
+      { error: error instanceof Error ? error.message : 'Error al buscar objetos en la base de datos' },
       { status: 500 }
     );
   }
@@ -56,19 +61,27 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Usar datos de ejemplo en desarrollo si no hay conexión a Neon
-    if (!isDbConfigured || !sql) {
-      const nuevoObjeto: Objeto = {
-        id: objetosEnMemoria.length > 0 ? Math.max(...objetosEnMemoria.map(o => o.id)) + 1 : 1,
-        nombre: body.nombre,
-        descripcion: body.descripcion || '',
-        ubicacion: body.ubicacion,
-        created_at: new Date().toISOString(),
-        updated_at: null
-      };
-      
-      objetosEnMemoria = [nuevoObjeto, ...objetosEnMemoria];
-      return NextResponse.json({ objeto: nuevoObjeto }, { status: 201 });
+    const sql = getDb();
+    
+    // Si no hay conexión configurada a Neon
+    if (!sql) {
+      if (process.env.NODE_ENV === 'development') {
+        const nuevoObjeto: Objeto = {
+          id: objetosEnMemoria.length > 0 ? Math.max(...objetosEnMemoria.map(o => o.id)) + 1 : 1,
+          nombre: body.nombre,
+          descripcion: body.descripcion || '',
+          ubicacion: body.ubicacion,
+          created_at: new Date().toISOString(),
+          updated_at: null
+        };
+        
+        objetosEnMemoria = [nuevoObjeto, ...objetosEnMemoria];
+        return NextResponse.json({ objeto: nuevoObjeto }, { status: 201 });
+      }
+      return NextResponse.json(
+        { error: 'DATABASE_URL no está configurada en las variables de entorno' },
+        { status: 500 }
+      );
     }
 
     // Insertar el objeto en la base de datos Neon
@@ -84,7 +97,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error al agregar objeto:', error);
     return NextResponse.json(
-      { error: 'Error al agregar el objeto' },
+      { error: error instanceof Error ? error.message : 'Error al agregar objeto en la base de datos' },
       { status: 500 }
     );
   }
