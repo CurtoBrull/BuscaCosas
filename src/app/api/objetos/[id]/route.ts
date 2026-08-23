@@ -3,6 +3,8 @@ import { getDb } from '@/lib/db';
 import { Objeto, ObjetoInput } from '@/lib/types';
 import { mockObjetos } from '@/lib/mockData';
 
+export const dynamic = 'force-dynamic';
+
 const objetosEnMemoria = mockObjetos;
 
 // PUT /api/objetos/[id] - Actualizar un objeto existente

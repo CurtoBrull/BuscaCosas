@@ -4,6 +4,8 @@ import { buscarObjetos } from '@/lib/utils';
 import { Objeto, ObjetoInput } from '@/lib/types';
 import { mockObjetos } from '@/lib/mockData';
 
+export const dynamic = 'force-dynamic';
+
 // Variable para almacenar objetos en memoria durante el desarrollo si no hay BBDD
 let objetosEnMemoria = [...mockObjetos];
 

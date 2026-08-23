@@ -4,6 +4,8 @@ import { simularRespuestaIA } from '@/lib/utils';
 import { Objeto } from '@/lib/types';
 import { mockObjetos } from '@/lib/mockData';
 
+export const dynamic = 'force-dynamic';
+
 // POST /api/ia - Procesar consulta en lenguaje natural
 export async function POST(request: NextRequest) {
   try {
