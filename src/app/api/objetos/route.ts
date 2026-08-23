@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { sql, isDbConfigured } from '@/lib/db';
 import { buscarObjetos } from '@/lib/utils';
 import { Objeto, ObjetoInput } from '@/lib/types';
 import { mockObjetos } from '@/lib/mockData';
 
-// Variable para almacenar objetos en memoria durante el desarrollo
+// Variable para almacenar objetos en memoria durante el desarrollo si no hay BBDD
 let objetosEnMemoria = [...mockObjetos];
-
-// Función para determinar si estamos usando datos de ejemplo
-const usarDatosEjemplo = () => {
-  return process.env.NODE_ENV === 'development' && 
-         (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
-          process.env.NEXT_PUBLIC_SUPABASE_URL.includes('example'));
-};
 
 // GET /api/objetos - Buscar objetos por texto
 export async function GET(request: NextRequest) {
@@ -22,27 +15,23 @@ export async function GET(request: NextRequest) {
     
     let objetos: Objeto[] = [];
     
-    // Usar datos de ejemplo en desarrollo si no hay conexión a Supabase
-    if (usarDatosEjemplo()) {
+    // Usar datos de ejemplo en desarrollo si no hay conexión configurada a Neon
+    if (!isDbConfigured || !sql) {
       objetos = query ? buscarObjetos(objetosEnMemoria, query) : objetosEnMemoria;
       return NextResponse.json({ objetos }, { status: 200 });
     }
     
-    // Obtener todos los objetos de la base de datos
-    if (!supabase) {
-      throw new Error('Supabase client is not initialized');
-    }
-    const { data, error } = await supabase
-      .from('objetos')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // Obtener todos los objetos de la base de datos Neon
+    const rows = await sql`
+      SELECT id, nombre, descripcion, ubicacion, created_at, updated_at
+      FROM objetos
+      ORDER BY created_at DESC
+    `;
     
-    if (error) {
-      throw error;
-    }
+    const data = rows as unknown as Objeto[];
     
     // Si hay un query, filtrar los resultados
-    objetos = query ? buscarObjetos(data as Objeto[], query) : data as Objeto[];
+    objetos = query ? buscarObjetos(data, query) : data;
     
     return NextResponse.json({ objetos }, { status: 200 });
   } catch (error) {
@@ -67,8 +56,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Usar datos de ejemplo en desarrollo si no hay conexión a Supabase
-    if (usarDatosEjemplo()) {
+    // Usar datos de ejemplo en desarrollo si no hay conexión a Neon
+    if (!isDbConfigured || !sql) {
       const nuevoObjeto: Objeto = {
         id: objetosEnMemoria.length > 0 ? Math.max(...objetosEnMemoria.map(o => o.id)) + 1 : 1,
         nombre: body.nombre,
@@ -81,25 +70,17 @@ export async function POST(request: NextRequest) {
       objetosEnMemoria = [nuevoObjeto, ...objetosEnMemoria];
       return NextResponse.json({ objeto: nuevoObjeto }, { status: 201 });
     }
-    // Insertar el objeto en la base de datos
-    if (!supabase) {
-      throw new Error('Supabase client is not initialized');
-    }
-    const { data, error } = await supabase
-      .from('objetos')
-      .insert({
-        nombre: body.nombre,
-        descripcion: body.descripcion || '',
-        ubicacion: body.ubicacion,
-      })
-      .select()
-      .single();
+
+    // Insertar el objeto en la base de datos Neon
+    const rows = await sql`
+      INSERT INTO objetos (nombre, descripcion, ubicacion)
+      VALUES (${body.nombre}, ${body.descripcion || ''}, ${body.ubicacion})
+      RETURNING id, nombre, descripcion, ubicacion, created_at, updated_at
+    `;
     
-    if (error) {
-      throw error;
-    }
+    const objeto = rows[0] as unknown as Objeto;
     
-    return NextResponse.json({ objeto: data }, { status: 201 });
+    return NextResponse.json({ objeto }, { status: 201 });
   } catch (error) {
     console.error('Error al agregar objeto:', error);
     return NextResponse.json(

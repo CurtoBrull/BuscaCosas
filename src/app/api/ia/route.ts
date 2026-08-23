@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { sql, isDbConfigured } from '@/lib/db';
 import { simularRespuestaIA } from '@/lib/utils';
 import { Objeto } from '@/lib/types';
 import { mockObjetos } from '@/lib/mockData';
-
-// Función para determinar si estamos usando datos de ejemplo
-const usarDatosEjemplo = () => {
-  return process.env.NODE_ENV === 'development' && 
-         (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
-          process.env.NEXT_PUBLIC_SUPABASE_URL.includes('example'));
-};
 
 // POST /api/ia - Procesar consulta en lenguaje natural
 export async function POST(request: NextRequest) {
@@ -25,27 +18,21 @@ export async function POST(request: NextRequest) {
     
     let objetos: Objeto[] = [];
     
-    // Usar datos de ejemplo en desarrollo si no hay conexión a Supabase
-    if (usarDatosEjemplo()) {
+    // Usar datos de ejemplo en desarrollo si no hay conexión a Neon
+    if (!isDbConfigured || !sql) {
       objetos = mockObjetos;
     } else {
-      // Obtener todos los objetos de la base de datos
-      if (!supabase) {
-        throw new Error('Supabase no está inicializado');
-      }
-      const { data, error } = await supabase
-        .from('objetos')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Obtener todos los objetos de la base de datos Neon
+      const rows = await sql`
+        SELECT id, nombre, descripcion, ubicacion, created_at, updated_at
+        FROM objetos
+        ORDER BY created_at DESC
+      `;
       
-      if (error) {
-        throw error;
-      }
-      
-      objetos = data as Objeto[];
+      objetos = rows as unknown as Objeto[];
     }
     
-    // Simular respuesta de IA (esto será reemplazado por Gemini más adelante)
+    // Simular respuesta de IA
     const { respuesta, objetosEncontrados } = simularRespuestaIA(pregunta, objetos);
     
     return NextResponse.json({

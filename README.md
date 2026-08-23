@@ -7,7 +7,7 @@ Aplicación web fullstack para uso doméstico que ayuda a recordar y encontrar l
 - Registro de objetos con nombre, descripción y ubicación
 - Búsqueda de objetos mediante preguntas en lenguaje natural
 - Búsqueda flexible y tolerante a palabras clave
-- Base de datos PostgreSQL con Supabase
+- Base de datos PostgreSQL serverless con [Neon](https://neon.tech)
 - Frontend y backend con Next.js y TypeScript
 
 ## Tecnologías utilizadas
@@ -15,7 +15,7 @@ Aplicación web fullstack para uso doméstico que ayuda a recordar y encontrar l
 - Next.js con App Router
 - TypeScript
 - Tailwind CSS
-- Supabase (PostgreSQL)
+- Neon Serverless PostgreSQL (`@neondatabase/serverless`)
 - React Hooks personalizados
 
 ## Estructura del proyecto
@@ -27,7 +27,7 @@ Aplicación web fullstack para uso doméstico que ayuda a recordar y encontrar l
       /objetos     # Endpoints para gestionar objetos
       /ia          # Endpoint para consultas en lenguaje natural
   /components      # Componentes React reutilizables
-  /lib             # Lógica de negocio y utilidades
+  /lib             # Lógica de conexión a BBDD y utilidades
 ```
 
 ## Configuración del proyecto
@@ -35,15 +35,15 @@ Aplicación web fullstack para uso doméstico que ayuda a recordar y encontrar l
 ### Requisitos previos
 
 - Node.js 18.x o superior
-- Cuenta en Supabase
+- Cuenta en [Neon](https://console.neon.tech/)
 
 ### Instalación
 
 1. Clona el repositorio:
 
 ```bash
-git clone https://github.com/tu-usuario/buscacosas.git
-cd buscacosas
+git clone https://github.com/CurtoBrull/BuscaCosas.git
+cd BuscaCosas
 ```
 
 2. Instala las dependencias:
@@ -52,23 +52,31 @@ cd buscacosas
 npm install
 ```
 
-3. Crea un archivo `.env.local` en la raíz del proyecto con las siguientes variables:
+3. Crea un archivo `.env.local` en la raíz del proyecto con tu cadena de conexión de Neon:
 
+```env
+DATABASE_URL="postgresql://usuario:password@ep-...neon.tech/neondb?sslmode=require"
 ```
-NEXT_PUBLIC_SUPABASE_URL=tu-url-de-supabase
-NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-clave-anonima-de-supabase
+
+### Configuración de la base de datos en Neon
+
+1. Crea un proyecto en [Neon Console](https://console.neon.tech/).
+2. Ve a la pestaña **SQL Editor** en Neon y ejecuta el contenido de `schema.sql`:
+
+```sql
+CREATE TABLE IF NOT EXISTS objetos (
+  id BIGSERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  descripcion TEXT DEFAULT '',
+  ubicacion TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_objetos_created_at ON objetos(created_at DESC);
 ```
 
-### Configuración de Supabase
-
-1. Crea una nueva base de datos en Supabase
-2. Crea una tabla `objetos` con los siguientes campos:
-   - `id`: int8 (primary key, auto-increment)
-   - `nombre`: text (not null)
-   - `descripcion`: text
-   - `ubicacion`: text (not null)
-   - `created_at`: timestamptz (default: now())
-   - `updated_at`: timestamptz (nullable)
+3. Copia la cadena de conexión (`DATABASE_URL`) desde el Dashboard de Neon y pégala en tu `.env.local`.
 
 ## Desarrollo
 
@@ -82,21 +90,10 @@ La aplicación estará disponible en [http://localhost:3000](http://localhost:30
 
 ## Despliegue en Vercel
 
-La forma más sencilla de desplegar esta aplicación es utilizando [Vercel](https://vercel.com):
-
-1. Crea una cuenta en Vercel si aún no tienes una
-2. Conecta tu repositorio de GitHub/GitLab/Bitbucket
-3. Importa el proyecto
-4. Configura las variables de entorno en la configuración del proyecto en Vercel
-5. Despliega
-
-## Futuras mejoras
-
-- Integración con Gemini para mejorar la interpretación de consultas en lenguaje natural
-- Categorización de objetos
-- Búsqueda por ubicación
-- Historial de búsquedas
-- Imágenes de objetos
+1. Sube tu proyecto a un repositorio GitHub/GitLab.
+2. Importa el proyecto en [Vercel](https://vercel.com).
+3. Añade la variable de entorno `DATABASE_URL` con tu cadena de conexión de Neon.
+4. Despliega.
 
 ## Licencia
 
